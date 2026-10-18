@@ -22,6 +22,14 @@ Describe "New-LauncherText" {
         $t | Should -Match "Set-Location 'C:\\it''s'"
         $t | Should -Match 'pwsh -c """"echo hi""""'
     }
+    It "resumes the last Claude conversation, falling back to a new one" {
+        $t = New-LauncherText -Port 7681 -Command "claude" -WorkingDirectory "C:\Work" -AuthHeader "X-A" -Resume
+        $t | Should -Match ([regex]::Escape('claude --continue; if (-not $?) { claude }'))
+    }
+    It "does not add --continue without -Resume or to other commands" {
+        (New-LauncherText -Port 1 -Command "claude" -WorkingDirectory "C:\" -AuthHeader "X-A") | Should -Not -Match "--continue"
+        (New-LauncherText -Port 1 -Command "pwsh -NoLogo" -WorkingDirectory "C:\" -AuthHeader "X-A" -Resume) | Should -Not -Match "--continue"
+    }
     It "rejects a header name with spaces or symbols" {
         { New-LauncherText -Port 1 -Command "x" -WorkingDirectory "C:\" -AuthHeader "X Bad;" } | Should -Throw
     }

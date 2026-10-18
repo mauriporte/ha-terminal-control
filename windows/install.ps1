@@ -11,6 +11,7 @@
 
 .EXAMPLE
   .\install.ps1                                   # ttyd + launcher (current user), command "claude"
+  .\install.ps1 -NoResume                         # a new Claude conversation on every page load
   .\install.ps1 -Command "pwsh -NoLogo"           # any other command
   .\install.ps1 -TunnelHost <tunnel-host-ip> -FirewallOnly   # as administrator: firewall rule only
 #>
@@ -18,9 +19,12 @@
 param(
     [int]$Port = 7681,
     [string]$Command = "claude",
-    [string]$WorkingDirectory = $env:USERPROFILE,
+    # its own folder = its own Claude Code project, so --continue resumes the web terminal's conversation and not
+    # another session's (Claude can still work anywhere on the PC from there)
+    [string]$WorkingDirectory = (Join-Path $env:USERPROFILE "terminal-control"),
     [string]$AuthHeader = "Cf-Access-Authenticated-User-Email",
     [string]$TunnelHost,
+    [switch]$NoResume,
     [switch]$FirewallOnly,
     [switch]$Startup
 )
@@ -29,8 +33,12 @@ $dir = Join-Path $env:LOCALAPPDATA "terminal-control"
 
 function New-LauncherText {
     <# The VBScript launcher: hidden window, ttyd with the auth header, the command in PowerShell. #>
-    param([int]$Port, [string]$Command, [string]$WorkingDirectory, [string]$AuthHeader)
+    param([int]$Port, [string]$Command, [string]$WorkingDirectory, [string]$AuthHeader, [switch]$Resume)
     if ($AuthHeader -notmatch '^[A-Za-z0-9-]+$') { throw "AuthHeader must be a plain header name" }
+    if ($Resume -and $Command -match '^claude(\s|$)') {
+        # ttyd ends the session when the page disconnects: reopen the last conversation instead (a new one if none)
+        $Command = "$Command --continue; if (-not `$?) { $Command }"
+    }
     $cmd = $Command.Replace('"', '""""')
     $wd = $WorkingDirectory.Replace("'", "''")
     @"
@@ -51,10 +59,10 @@ if (-not $FirewallOnly) {
         -not (Test-Path "$env:LOCALAPPDATA\Microsoft\WinGet\Links\ttyd.exe")) {
         winget install --id tsl0922.ttyd --exact --silent --accept-package-agreements --accept-source-agreements
     }
-    New-Item -ItemType Directory -Force $dir | Out-Null
+    New-Item -ItemType Directory -Force $dir, $WorkingDirectory | Out-Null
     $launcher = Join-Path $dir "terminal-control.vbs"
-    New-LauncherText -Port $Port -Command $Command -WorkingDirectory $WorkingDirectory -AuthHeader $AuthHeader |
-        Set-Content -Encoding ASCII $launcher
+    New-LauncherText -Port $Port -Command $Command -WorkingDirectory $WorkingDirectory -AuthHeader $AuthHeader `
+        -Resume:(-not $NoResume) | Set-Content -Encoding ASCII $launcher
     Write-Host "Launcher: $launcher"
     if ($Startup) {
         Copy-Item $launcher (Join-Path ([Environment]::GetFolderPath("Startup")) "terminal-control.vbs") -Force

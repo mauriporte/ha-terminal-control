@@ -23,7 +23,9 @@ HA dashboard iframe ──▶ https://terminal.example.com ──▶ Cloudflare 
   open directly. No bypass rule: the login is the only way in.
 - **Windows Firewall** only lets your tunnel/proxy machine reach the port, so nobody else on the network can send a
   fake header.
-- Each browser connection opens a new session (up to 3 at once). Leaving the page closes it.
+- Each browser connection opens a new session (up to 3 at once). Leaving or refreshing the page ends it, but the
+  terminal starts `claude --continue` in its own folder (`%USERPROFILE%\terminal-control`), so the same conversation
+  comes back with its history; only an answer being written at that moment is lost. `-NoResume` turns this off.
 
 ## Install
 
@@ -37,7 +39,7 @@ git clone https://github.com/mauriporte/ha-terminal-control; cd ha-terminal-cont
 wscript "$env:LOCALAPPDATA\terminal-control\terminal-control.vbs"   # start it without logging off
 ```
 
-Options: `-Command "pwsh -NoLogo"` for another program, `-WorkingDirectory D:\work`, `-Port 7681`,
+Options: `-Command "pwsh -NoLogo"` for another program, `-WorkingDirectory D:\work`, `-NoResume`, `-Port 7681`,
 `-AuthHeader <name>` for another proxy's identity header.
 
 ## Cloudflare (tunnel + Access)
@@ -70,6 +72,9 @@ theme in [`examples/themes/`](examples/themes/terminal_control.yaml) for an edge
 
 - **"Do you trust the files in this folder?"** appears the first time Claude Code starts in the working directory.
   Answer it once in a normal terminal in that folder (or in the web terminal); it is remembered.
+- **Why its own folder**: `--continue` resumes the most recent conversation of the current folder. Starting in your
+  user folder could resume a conversation from another Claude Code window; a dedicated folder keeps the web
+  terminal's conversations apart.
 - **"Transcript saving is off — inherited CLAUDE_CODE_CHILD_SESSION marker"**: ttyd was started from another Claude
   Code session and its variables were passed down. The launcher clears `CLAUDE*` variables before starting the
   command; starting ttyd at logon (Startup folder) avoids it as well.
