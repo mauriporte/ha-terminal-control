@@ -1,0 +1,5 @@
+# Optional Home Assistant theme for the terminal view: /config/themes/, then call frontend.reload_themes.
+Terminal Control:
+  ha-view-sections-column-gap: 0px      # the terminal reaches the edges
+  ha-view-sections-row-gap: 6px         # small space above the title
+  ha-card-border-color: "#000000"       # no grey outline around the frame

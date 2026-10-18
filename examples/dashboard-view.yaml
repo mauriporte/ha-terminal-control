@@ -1,0 +1,27 @@
+# A Home Assistant dashboard view (sections) with the terminal full width. Paste it into the raw configuration editor
+# of a dashboard, under `views:`, and replace the URL with your access-protected hostname.
+title: Terminal
+path: terminal
+icon: mdi:console
+type: sections
+max_columns: 4
+theme: Terminal Control          # examples/themes/terminal_control.yaml (optional)
+sections:
+  - type: grid
+    column_span: 4
+    cards:
+      - type: heading
+        heading: Terminal Control
+        icon: mdi:console
+        grid_options: {columns: full}
+        badges:
+          - type: button
+            text: Open in a tab (log in here the first time)
+            icon: mdi:open-in-new
+            tap_action: {action: url, url_path: "https://terminal.example.com/"}
+      - type: iframe
+        url: https://terminal.example.com/
+        aspect_ratio: 16x9
+        grid_options:
+          columns: full
+          rows: 15          # sections views size iframes in rows; use the largest value that does not scroll
